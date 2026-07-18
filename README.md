@@ -101,17 +101,7 @@ python main.py
 DiscordBotPy/
 ├── bot/
 │   └── bot.py              # Основной класс бота
-├── cogs/                   # Команды бота
-│   ├── back.py             # Команда /back
-│   ├── join.py             # Команда /join
-│   ├── leave.py            # Команда /leave
-│   ├── play.py             # Команда /play
-│   ├── repeat_current.py   # Команда /repeat_one
-│   ├── repeat_all.py       # Команда /repeat_all
-│   ├── search.py           # Команда /search
-│   ├── skip.py             # Команда /skip
-│   ├── stop.py             # Команда /stop
-│   └── test.py             # Команда /ping
+├── cogs/*                  # Команды бота
 ├── handler/                # Обработчики логики
 │   ├── config.py           # Настройки и конфигурация
 │   ├── music_handler.py    # Основная логика воспроизведения
