@@ -12,7 +12,7 @@ class RepeatAllCommand(commands.Cog):
       self.bot = bot
 
    @app_commands.command(name="repeat_all", description="Enables/disables repeating the current queue")
-   async def leave(self, interaction: discord.Interaction):
+   async def repeat_all(self, interaction: discord.Interaction):
       guild_id = interaction.guild.id
       
       if not interaction.user.voice:

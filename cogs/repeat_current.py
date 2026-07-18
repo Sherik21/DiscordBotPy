@@ -12,7 +12,7 @@ class RepeatCurrentCommand(commands.Cog):
       self.bot = bot
 
    @app_commands.command(name="repeat_one", description="Enables/disables repeating the current track")
-   async def leave(self, interaction: discord.Interaction):
+   async def repeat_current(self, interaction: discord.Interaction):
       guild_id = interaction.guild.id
       
       if not interaction.user.voice:
