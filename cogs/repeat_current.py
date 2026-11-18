@@ -5,35 +5,26 @@ from handler.music_handler import MusicHandler
 from handler.queue_manager import RepeatMode
 
 class RepeatCurrentCommand(commands.Cog):
-   def __init__(self, bot):
-      """
-      Initializes the cog with the bot instance.
-      """
-      self.bot = bot
+    def __init__(self, bot):
+        self.bot = bot
 
-   @app_commands.command(name="repeat_one", description="Enables/disables repeating the current track")
-   async def repeat_current(self, interaction: discord.Interaction):
-      guild_id = interaction.guild.id
-      
-      if not interaction.user.voice:
-         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"), 
-            ephemeral=True # Only the user sees this message
-         )
-         return
-      
-      # Get the specific MusicHandler instance associated with this server (guild)
-      musicHandler: MusicHandler = await self.bot.getMusicHandler(guild_id)
-      
-      new_mode = musicHandler.toggle_repeat_mode(RepeatMode.ONE)
+    @app_commands.command(name="repeat_one", description="Toggle repeat mode for current track.")
+    async def repeat_current(self, interaction: discord.Interaction):
+        guild_id = interaction.guild.id
 
-      await interaction.response.send_message(
-         content=self.bot.locale_manager.get_text(guild_id, new_mode.status_message),
-      )
+        if not interaction.user.voice:
+            await interaction.response.send_message(
+                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                ephemeral=True
+            )
+            return
 
-# Required setup function for Discord Cogs
+        music_handler: MusicHandler = await self.bot.getMusicHandler(guild_id)
+        new_mode = music_handler.toggle_repeat_mode(RepeatMode.ONE)
+
+        await interaction.response.send_message(
+            content=self.bot.locale_manager.get_text(guild_id, new_mode.status_message)
+        )
+
 async def setup(bot):
-   """
-   Registers the PlayCommand cog with the bot.
-   """
-   await bot.add_cog(RepeatCurrentCommand(bot))
+    await bot.add_cog(RepeatCurrentCommand(bot))

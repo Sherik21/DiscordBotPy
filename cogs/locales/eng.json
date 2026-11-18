@@ -1,57 +1,88 @@
 {
     "common": {
         "not_in_voice": "You are not in a voice channel.",
-        "bot_not_in_voice": "I'm not in the voice channel. Use the /join command.",
+        "bot_not_in_voice": "Bot is not connected to a voice channel.",
         "error": "Error: {error}",
         "added_by": "Added by"
     },
     "join": {
-        "already_in_channel": "I am already in {channel}!",
-        "cannot_join": "The bot can't join your channel!",
-        "joined": "Joined {channel}!"
+        "already_in_channel": "Already in {channel}.",
+        "cannot_join": "Cannot join voice channel.",
+        "joined": "Joined {channel}."
     },
     "leave": {
-        "left": "I left the channel"
+        "left": "Left voice channel."
     },
     "play": {
-        "incorrect_link": "Incorrect video link"
+        "incorrect_link": "Invalid link or track not found."
+    },
+    "playlist": {
+        "title": "Playlist Added",
+        "added": "Added {count} tracks to queue."
+    },
+    "pause": {
+        "paused": "Playback paused.",
+        "resumed": "Playback resumed.",
+        "not_playing": "Nothing is currently playing.",
+        "already_paused": "Playback is already paused.",
+        "not_paused": "Playback is not paused."
+    },
+    "volume": {
+        "current": "Current volume: {volume}%.",
+        "changed": "Volume set to {volume}%."
+    },
+    "shuffle": {
+        "shuffled": "Queue shuffled.",
+        "not_enough": "Not enough tracks in queue to shuffle."
+    },
+    "clear": {
+        "cleared": "Queue cleared (removed {count} tracks)."
+    },
+    "remove": {
+        "removed": "Track \"{title}\" removed from queue.",
+        "invalid_index": "Invalid track index."
+    },
+    "seek": {
+        "success": "Seeked to {position}.",
+        "failed": "Failed to seek.",
+        "invalid_position": "Invalid seek position."
     },
     "queue": {
         "title_queue": "Queue",
         "title_history": "History",
         "nothing_playing": "Nothing is playing now.",
-        "currently_playing": "**Currently playing:**",
-        "next_in_list": "Next in the list:",
-        "queue_empty": "Queue is empty",
-        "previous_in_list": "Previous in the list:",
-        "history_empty": "History is empty",
+        "currently_playing": "Currently playing:",
+        "next_in_list": "Next in queue:",
+        "queue_empty": "Queue is empty.",
+        "previous_in_list": "Previous tracks:",
+        "history_empty": "History is empty.",
         "total": "Total",
-        "and_another": "*...and another {count} tracks in the {type}*",
+        "and_another": "...and another {count} tracks in {type}",
         "type_queue": "queue",
         "type_history": "history"
     },
     "repeat": {
-        "repeat_disabled": "🔂 Auto repeat is **disabled**",
-        "one_enabled": "🔂 Auto repeat of current track is **enabled.**",
-        "all_enabled": "🔁 Auto repeat of current queue is **enabled.**"
+        "repeat_disabled": "Repeat disabled.",
+        "one_enabled": "Repeat current track enabled.",
+        "all_enabled": "Repeat all enabled."
     },
     "skip": {
-        "skipped": "⏭️ Audio skipped.",
-        "queue_empty": "Queue is empty. Nothing to skip."
+        "skipped": "Track skipped.",
+        "nothing_to_skip": "Nothing to skip."
     },
     "stop": {
-        "stopped": "⏹️ Audio stopped.",
+        "stopped": "Playback stopped.",
         "nothing_playing": "Nothing is playing now."
     },
     "back": {
-        "returned": "⏮️ Returned to the previous track.",
-        "history_empty": "History is empty. Can't go back."
+        "returned": "Returned to previous track.",
+        "history_empty": "History is empty. Cannot go back."
     },
     "language": {
         "title": "Language Settings",
         "current": "Current language",
         "select": "Select language",
-        "changed": "Language has been changed to {language}",
-        "description": "Choose your preferred language for bot responses"
+        "changed": "Language changed to {language}",
+        "description": "Select bot language"
     }
 }

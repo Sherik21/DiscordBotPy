@@ -3,3 +3,6 @@ yt-dlp
 python-dotenv
 httpx
 PyNaCl
+davey
+imageio-ffmpeg
+PySocks

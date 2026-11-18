@@ -1,115 +1,143 @@
-from dotenv import dotenv_values
+import os
+import struct
+from pathlib import Path
+from dotenv import dotenv_values, load_dotenv
 import discord
 from discord.ext import commands
-import os
-from handler.music_handler import MusicHandler 
+from discord.voice_state import VoiceConnectionState
+from discord.gateway import DiscordVoiceWebSocket
+from handler.music_handler import MusicHandler
 from cogs.locales.locale_manager import LocaleManager
 
+orig_execute_transition = VoiceConnectionState._execute_transition
+
+async def patched_execute_transition(self, transition_id: int):
+    if transition_id not in self.dave_pending_transitions:
+        self.dave_pending_transitions[transition_id] = self.dave_protocol_version
+    if self.dave_session:
+        try:
+            self.dave_session.prepare_transition(transition_id, self.dave_protocol_version)
+        except Exception:
+            pass
+        try:
+            self.dave_session.execute_transition(transition_id)
+        except Exception:
+            pass
+    await orig_execute_transition(self, transition_id)
+
+VoiceConnectionState._execute_transition = patched_execute_transition
+
+orig_voice_ws_received_message = DiscordVoiceWebSocket.received_message
+
+async def patched_voice_ws_received_message(self, msg):
+    res = await orig_voice_ws_received_message(self, msg)
+    if msg.get("op") == DiscordVoiceWebSocket.DAVE_EXECUTE_TRANSITION:
+        tid = msg.get("d", {}).get("transition_id")
+        state = self._connection
+        sess = getattr(state, "dave_session", None)
+        if sess and tid is not None:
+            try:
+                sess.prepare_transition(tid, state.dave_protocol_version)
+            except Exception:
+                pass
+            try:
+                sess.execute_transition(tid)
+            except Exception:
+                pass
+    return res
+
+DiscordVoiceWebSocket.received_message = patched_voice_ws_received_message
+
+orig_voice_ws_received_binary_message = DiscordVoiceWebSocket.received_binary_message
+
+async def patched_voice_ws_received_binary_message(self, msg: bytes):
+    await orig_voice_ws_received_binary_message(self, msg)
+    if len(msg) > 2:
+        op = msg[2]
+        if op in (DiscordVoiceWebSocket.MLS_ANNOUNCE_COMMIT_TRANSITION, DiscordVoiceWebSocket.MLS_WELCOME):
+            tid = struct.unpack_from(">H", msg, 3)[0]
+            state = self._connection
+            sess = getattr(state, "dave_session", None)
+            if tid == 0 and sess and not sess.ready:
+                try:
+                    sess.prepare_transition(0, state.dave_protocol_version)
+                except Exception:
+                    pass
+                try:
+                    sess.execute_transition(0)
+                except Exception:
+                    pass
+
+DiscordVoiceWebSocket.received_binary_message = patched_voice_ws_received_binary_message
+
 class Bot(commands.Bot):
-   """
-   Custom implementation of a Discord bot using discord.py library.
-   Manages the bot's lifecycle, configuration, cogs loading, and per-guild music handlers.
-   """
-   def __init__(self):
-      """
-      Initializes the bot, sets intents, loads configuration from .env, and validates the token.
-      """
-      # Initialize the commands.Bot parent class with a prefix and all intents
-      super().__init__(command_prefix="!", intents=discord.Intents.all())
-      
-      # Dictionary to store a dedicated MusicHandler instance for each Discord server (guild)
-      self.__musicHandlers = {}
+    def __init__(self):
+        super().__init__(command_prefix="!", intents=discord.Intents.all())
+        if not discord.opus.is_loaded():
+            try:
+                discord.opus._load_default()
+            except Exception as opus_err:
+                print(f"Failed to load opus: {opus_err}")
+        self.__musicHandlers = {}
+        self.locale_manager = LocaleManager(self)
+        self.base_dir = Path(__file__).resolve().parent.parent
+        self.__TOKEN = self.load_token()
 
-      # Initialize local manager
-      self.locale_manager = LocaleManager(self)
+    async def getMusicHandler(self, guild_id: int) -> MusicHandler:
+        if guild_id not in self.__musicHandlers:
+            self.__musicHandlers[guild_id] = MusicHandler(self)
+        return self.__musicHandlers[guild_id]
 
-      # Load the bot token securely from the environment file
-      token = self.load_token()
-      if token == "":
-         print("Invalid token specified in .env file.")
-         return
-      self.__TOKEN = token
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        guild_id = member.guild.id
+        if member == self.user:
+            if before.channel and not after.channel:
+                if guild_id in self.__musicHandlers:
+                    self.__musicHandlers[guild_id].clear()
+            return
 
-   async def getMusicHandler(self, guild_id: int) -> MusicHandler:
-      """
-      Retrieves the MusicHandler instance for a specific guild ID.
-      Creates a new handler if one does not already exist for that guild.
+        voice = member.guild.voice_client
+        if voice and before.channel and voice.channel == before.channel:
+            non_bots = [m for m in before.channel.members if not m.bot]
+            if len(non_bots) == 0:
+                if guild_id in self.__musicHandlers:
+                    self.__musicHandlers[guild_id].clear()
+                await voice.disconnect()
 
-      Args:
-         guild_id: The unique ID of the Discord server (guild).
+    async def on_ready(self):
+        print(f"Logged in as {self.user.name} ({self.user.id})")
+        try:
+            synced = await self.tree.sync()
+            print(f"Synced {len(synced)} slash command(s).")
+        except Exception as error:
+            print(f"Failed to sync slash commands: {error}")
 
-      Returns:
-         The MusicHandler instance for the specified guild.
-      """
-      if guild_id not in self.__musicHandlers:
-         self.__musicHandlers[guild_id] = MusicHandler(self)
-         print(f"Created MusicHandler for server: {guild_id}")
-      
-      return self.__musicHandlers[guild_id]
+    async def load(self):
+        cogs_dir = self.base_dir / "cogs"
+        for entry in os.listdir(cogs_dir):
+            if entry.endswith(".py") and not entry.startswith("__"):
+                module_name = entry[:-3]
+                try:
+                    await self.load_extension(f"cogs.{module_name}")
+                    print(f"Loaded cog: {module_name}")
+                except Exception as error:
+                    print(f"Failed to load cog {module_name}: {error}")
 
-   async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-      """
-      Event handler triggered when a user's voice state changes (e.g., joins/leaves/moves channel).
+    def load_token(self) -> str:
+        env_path = self.base_dir / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+            values = dotenv_values(env_path)
+            token = values.get("TOKEN")
+            if token:
+                return token.strip()
+        env_token = os.getenv("TOKEN")
+        return env_token.strip() if env_token else ""
 
-      Used here to detect if the bot itself (self.user) is disconnected from a voice channel 
-      by a user action (e.g. kicked, or channel emptied), and sets the stop flag.
-      """
-      # Check if the update event is about the bot itself
-      if member == self.user:
-         guild_id = member.guild.id
-         
-         # Case 1: Bot was in a channel (before) and is no longer (after is None)
-         if before.channel and not after.channel:
-            if guild_id in self.__musicHandlers:
-               await self.__musicHandlers[guild_id].setStopFlag(True)
-         
-         # Case 2: Bot joins a new channel (this case seems redundant with Case 1 logic but included as in original)
-         # Note: The original logic here also sets the stop flag when *joining* a channel, which may be unintentional. 
-         # A typical implementation only stops when leaving/disconnecting.
-         elif not before.channel and after.channel:
-             if guild_id in self.__musicHandlers:
-               await self.__musicHandlers[guild_id].setStopFlag(True)
-
-
-   async def on_ready(self):
-      """
-      Event handler called when the bot successfully connects to Discord.
-      Used to print connection status and synchronize application (slash) commands.
-      """
-      print(f'Бот вошел в систему как {self.user.name}')
-      try:
-         # Synchronize slash commands globally with Discord's API
-         synced = await self.tree.sync()
-         print(f"Синхронизировано {len(synced)} слеш-команд(ы).")
-      except Exception as e:
-         print(f"Failed to sync slash commands: {e}")
-
-   async def load(self):
-      """
-      Loads all extension files (cogs) located in the './cogs' directory.
-      """
-      for filename in os.listdir("./cogs"):
-         if filename.endswith(".py"):
-            # Constructs the module path, e.g., "cogs.playcommand"
-            await self.load_extension(f"cogs.{filename[:-3]}")
-            print(f"Loaded cog: {filename[:-3]}")
-
-   def load_token(self) -> str:
-      """
-      Reads the 'TOKEN' value from the local .env file using dotenv.
-
-      Returns:
-         The bot token string, or an empty string if not found.
-      """
-      config = dotenv_values("./.env")
-      return config.get("TOKEN", "")
-
-   async def run(self):
-      """
-      The main entry point to start the bot's operation.
-      It loads cogs and connects to the Discord API using the stored token.
-      """
-      # Use an async context manager for proper startup/shutdown
-      async with self:
-         await self.load() # Load all functionality/commands
-         await self.start(self.__TOKEN) # Connect and start the bot loop
+    async def run(self):
+        if not self.__TOKEN:
+            print("Token is missing. Specify TOKEN in .env or set environment variable.")
+            return
+        async with self:
+            await self.load()
+            await self.start(self.__TOKEN)

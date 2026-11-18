@@ -4,45 +4,41 @@ from discord import app_commands
 from handler.music_handler import MusicHandler
 
 class SkipCommand(commands.Cog):
-   def __init__(self, bot):
-      self.bot = bot
+    def __init__(self, bot):
+        self.bot = bot
 
-   @app_commands.command(name="skip", description="Skips current track.")
-   async def skip(self, interaction: discord.Interaction):
-      guild_id = interaction.guild.id
+    @app_commands.command(name="skip", description="Skip the current track.")
+    async def skip(self, interaction: discord.Interaction):
+        guild_id = interaction.guild.id
 
-      # Ensure the user is in a voice channel before proceeding
-      if not interaction.user.voice:
-         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"), 
-            ephemeral=True # Only the user sees this message
-         )
-         return
-      
-      # Get the specific MusicHandler instance associated with this server (guild)
-      musicHandler: MusicHandler = await self.bot.getMusicHandler(guild_id)
-      
-      if musicHandler.queue_empty:
-         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "skip.queue_empty"), 
-            ephemeral=True # Only the user sees this message
-         )
-         return
+        if not interaction.user.voice:
+            await interaction.response.send_message(
+                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                ephemeral=True
+            )
+            return
 
-      musicHandler.skip_flag = True
-      
-      voice = interaction.guild.voice_client
-      voice.stop()
-      await interaction.response.send_message(
-         content=self.bot.locale_manager.get_text(guild_id, "skip.skipped"),
-      )
-      if not voice.is_playing() and not musicHandler.is_playing:
-         # If nothing was playing, start the playback loop using the MusicHandler's player method
-         await musicHandler.player(voice=voice)
+        voice = interaction.guild.voice_client
+        music_handler: MusicHandler = await self.bot.getMusicHandler(guild_id)
+        current = music_handler.get_current_track()
 
-# Required setup function for Discord Cogs
+        if not voice or (not voice.is_playing() and (not current or current.empty)):
+            await interaction.response.send_message(
+                content=self.bot.locale_manager.get_text(guild_id, "skip.nothing_to_skip"),
+                ephemeral=True
+            )
+            return
+
+        music_handler.skip_flag = True
+        if voice.is_playing() or voice.is_paused():
+            voice.stop()
+
+        await interaction.response.send_message(
+            content=self.bot.locale_manager.get_text(guild_id, "skip.skipped")
+        )
+
+        if not voice.is_playing() and not music_handler.is_playing:
+            await music_handler.player(voice=voice)
+
 async def setup(bot):
-   """
-   Registers the SkipCommand cog with the bot.
-   """
-   await bot.add_cog(SkipCommand(bot))
+    await bot.add_cog(SkipCommand(bot))

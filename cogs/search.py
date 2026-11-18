@@ -4,99 +4,72 @@ from discord import app_commands
 from handler.track import Track
 from utils.utils import extractInfoByTitle, createEmbed
 from handler.music_handler import MusicHandler
+from utils.ui import MusicControlView
 
 class SearchCommand(commands.Cog):
-   """
-   A Discord bot cog that handles the '/play' slash command.
-   This command allows users to add music tracks to a guild's queue and start playback.
-   """
-   def __init__(self, bot):
-      """
-      Initializes the cog with the bot instance.
-      """
-      self.bot = bot
+    def __init__(self, bot):
+        self.bot = bot
 
-   @app_commands.command(name="search", description="Play audio.")
-   @app_commands.describe(title="The song to play (Name).")
-   async def search(self, interaction: discord.Interaction, title: str):
-      """
-      The main handler for the /search slash command.
+    @app_commands.command(name="search", description="Search and play audio by song title.")
+    @app_commands.describe(title="The song title to search and play.")
+    async def search(self, interaction: discord.Interaction, title: str):
+        await interaction.response.defer()
+        guild_id = interaction.guild.id
 
-      Args:
-          interaction: The Discord interaction object representing the command invocation.
-          url: The URL provided by the user for the track to be played.
-      """
-      # --- 1. Pre-checks ---
+        if not interaction.user.voice or not interaction.user.voice.channel:
+            await interaction.followup.send(
+                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                ephemeral=True
+            )
+            return
 
-      # Ensure the user is in a voice channel before proceeding
-      if not interaction.user.voice:
-         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"), 
-            ephemeral=True # Only the user sees this message
-         )
-         return
-      
-      # Check if the bot is already connected to a voice channel in this guild
-      if not interaction.guild.voice_client:
-         # If not connected, display a message
-         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "common.bot_not_in_voice"), 
-            ephemeral=True # Only the user sees this message
-         )
-         return
-      
-      # Defer the response because processing the URL might take time (API call)
-      await interaction.response.defer()
+        user_channel = interaction.user.voice.channel
+        voice = interaction.guild.voice_client
 
-      voice = interaction.guild.voice_client
-      
-      # Get the specific MusicHandler instance associated with this server (guild)
-      guild_id = interaction.guild.id
-      musicHandler: MusicHandler = await self.bot.getMusicHandler(guild_id)
-      
-      # Ensure playback is not explicitly stopped if a new command is issued
-      musicHandler.stop_flag = False
-      
-      try:
-         # Use the MusicHandler to fetch track metadata from the URL (e.g., via yt-dlp)
-         track: Track = await extractInfoByTitle(title)
-      except Exception as e:
-         # Handle potential errors during information extraction (e.g., video not found/private)
-         await interaction.followup.send(
-            content=self.bot.locale_manager.get_text(guild_id, "common.error", error=str(e)), 
-         )
-         return
-      
-      # --- 3. Add to Queue and Send Confirmation ---
+        if not voice:
+            try:
+                voice = await user_channel.connect(timeout=20.0, reconnect=True)
+            except Exception as connect_error:
+                print(f"Voice connect error: {connect_error}")
+                await interaction.followup.send(
+                    content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
+                    ephemeral=True
+                )
+                return
+        elif voice.channel != user_channel:
+            try:
+                await voice.move_to(user_channel)
+            except Exception:
+                pass
 
-      # Add the newly extracted track object to the queue
-      musicHandler.add_track(track)
+        music_handler: MusicHandler = await self.bot.getMusicHandler(guild_id)
+        music_handler.stop_flag = False
 
-      # Create a rich embed message to confirm the track was added
-      embed = createEmbed(track=track)
+        try:
+            track: Track = await extractInfoByTitle(title)
+        except Exception as error:
+            print(f"Track search error: {error}")
+            await interaction.followup.send(
+                content=self.bot.locale_manager.get_text(guild_id, "common.error", error=str(error)),
+                ephemeral=True
+            )
+            return
 
-      # Mention the user who added the song
-      embed.add_field(
-         name=self.bot.locale_manager.get_text(guild_id, "common.added_by"), 
-         value=f"<@{interaction.user.id}>", 
-         inline=False
-      ) 
-      
-      # Send the confirmation message in the channel
-      await interaction.followup.send(embed=embed)
+        music_handler.add_track(track)
+        embed = createEmbed(track=track)
+        embed.add_field(
+            name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
+            value=f"<@{interaction.user.id}>",
+            inline=False
+        )
 
-      # --- 4. Start Playback ---
+        view = MusicControlView(self.bot, guild_id)
+        await interaction.followup.send(embed=embed, view=view)
 
-      # If music is already actively playing (the queue loop is running), we just added to the queue, so we return.
-      if voice.is_playing() or musicHandler.is_playing:
-         return
-      
-      # If nothing was playing, start the playback loop using the MusicHandler's player method
-      await musicHandler.player(voice=voice)
+        if voice.is_playing() or music_handler.is_playing:
+            return
 
-# Required setup function for Discord Cogs
+        await music_handler.player(voice=voice)
+
 async def setup(bot):
-   """
-   Registers the PlayCommand cog with the bot.
-   """
-   await bot.add_cog(SearchCommand(bot))
+    await bot.add_cog(SearchCommand(bot))
