@@ -55,6 +55,13 @@ class MusicControlView(discord.ui.View):
             ephemeral=True
         )
 
+    @discord.ui.button(label="Repeat", style=discord.ButtonStyle.secondary, emoji="🔁")
+    async def toggle_repeat(self, interaction: discord.Interaction, button: discord.ui.Button):
+        music_handler: MusicHandler = await self.bot.getMusicHandler(self.guild_id)
+        mode = music_handler.cycle_repeat_mode()
+        text = self.bot.locale_manager.get_text(self.guild_id, mode.status_message)
+        await interaction.response.send_message(text, ephemeral=True)
+
     @discord.ui.button(label="Stop", style=discord.ButtonStyle.danger, emoji="⏹️")
     async def stop_playback(self, interaction: discord.Interaction, button: discord.ui.Button):
         voice = interaction.guild.voice_client

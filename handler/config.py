@@ -53,7 +53,7 @@ YDL_OPTIONS = {
     "ignoreerrors": False,
     "cachedir": False,
     "default_search": "ytsearch",
-    "socket_timeout": 10,
+    "socket_timeout": 5,
     "retries": 1,
     "extractor_retries": 1,
     "remote_components": ["ejs:github"]
@@ -70,7 +70,7 @@ if PROXY:
 
 YDL_OPTIONS_FROM_TITLE = dict(YDL_OPTIONS)
 
-before_opts = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+before_opts = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -probesize 32k -analyzeduration 0"
 if PROXY:
     before_opts += f" -http_proxy {PROXY}"
 

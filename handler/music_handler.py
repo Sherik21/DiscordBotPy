@@ -54,6 +54,16 @@ class MusicHandler:
             self.__queue_manager.repeat_mode = target_mode
         return self.__queue_manager.repeat_mode
 
+    def cycle_repeat_mode(self) -> RepeatMode:
+        current = self.__queue_manager.repeat_mode
+        if current == RepeatMode.NONE:
+            self.__queue_manager.repeat_mode = RepeatMode.ONE
+        elif current == RepeatMode.ONE:
+            self.__queue_manager.repeat_mode = RepeatMode.ALL
+        else:
+            self.__queue_manager.repeat_mode = RepeatMode.NONE
+        return self.__queue_manager.repeat_mode
+
     @property
     def queue_empty(self) -> bool:
         return self.__queue_manager.queue_empty
