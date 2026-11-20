@@ -60,7 +60,7 @@ class PlayCommand(commands.Cog):
                         value=f"<@{user.id}>",
                         inline=False
                     )
-                    view = MusicControlView(self.bot, guild_id, duration=tracks[0].duration if tracks else 0)
+                    view = MusicControlView(self.bot, guild_id)
                     await responder(embed=embed, view=view)
 
                     if not voice.is_playing() and not music_handler.is_playing:
@@ -103,7 +103,7 @@ class PlayCommand(commands.Cog):
             inline=False
         )
 
-        view = MusicControlView(self.bot, guild_id, duration=track.duration)
+        view = MusicControlView(self.bot, guild_id)
         await responder(embed=embed, view=view)
 
         if not voice.is_playing():
