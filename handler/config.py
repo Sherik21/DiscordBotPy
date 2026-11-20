@@ -53,9 +53,10 @@ YDL_OPTIONS = {
     "ignoreerrors": False,
     "cachedir": False,
     "default_search": "ytsearch",
-    "socket_timeout": 5,
-    "retries": 1,
-    "extractor_retries": 1,
+    "socket_timeout": 10,
+    "source_address": "0.0.0.0",
+    "retries": 3,
+    "extractor_retries": 3,
     "remote_components": ["ejs:github"]
 }
 
@@ -70,11 +71,11 @@ if PROXY:
 
 YDL_OPTIONS_FROM_TITLE = dict(YDL_OPTIONS)
 
-before_opts = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -probesize 32k -analyzeduration 0"
+before_opts = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5 -reconnect_on_network_error 1 -reconnect_on_http_error 4xx,5xx"
 if PROXY:
     before_opts += f" -http_proxy {PROXY}"
 
 FFMPEG_OPTIONS = {
     "before_options": before_opts,
-    "options": "-vn"
+    "options": "-vn -loglevel warning"
 }

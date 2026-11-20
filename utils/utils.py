@@ -62,7 +62,7 @@ def isPlaylistUrl(url: str) -> bool:
         return False
     if "watch?v=" in clean and "list=" in clean:
         return False
-    return "list=" in clean or "/playlist" in clean
+    return "list=" in clean or "/playlist" in clean or "/sets/" in clean or "/album/" in clean
 
 def _fetch_youtube_oembed_metadata(url: str) -> tuple[str, str]:
     clean_url = cleanTrackUrl(url)

@@ -2,8 +2,11 @@ import asyncio
 from bot.bot import Bot
 
 def main():
-   bot = Bot()
-   asyncio.run(bot.run())
+    bot = Bot()
+    try:
+        asyncio.run(bot.run())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

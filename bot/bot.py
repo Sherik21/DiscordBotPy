@@ -111,6 +111,7 @@ class Bot(commands.Bot):
             print(f"Synced {len(synced)} slash command(s).")
         except Exception as error:
             print(f"Failed to sync slash commands: {error}")
+        print("LIFEHOSTING_APP_READY")
 
     async def load(self):
         cogs_dir = self.base_dir / "cogs"

@@ -10,21 +10,17 @@ class PlayCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="play", description="Play audio from a URL, playlist, or search query.")
-    @app_commands.describe(query="The song URL, playlist link, or search title.")
-    async def play(self, interaction: discord.Interaction, query: str):
-        await interaction.response.defer()
-        guild_id = interaction.guild.id
+    async def _execute_play(self, responder, user: discord.Member, guild: discord.Guild, query: str):
+        guild_id = guild.id
 
-        if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.followup.send(
+        if not user.voice or not user.voice.channel:
+            await responder(
                 content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
                 ephemeral=True
             )
             return
 
-        user_channel = interaction.user.voice.channel
-
+        user_channel = user.voice.channel
         music_handler: MusicHandler = await self.bot.getMusicHandler(guild_id)
         music_handler.stop_flag = False
 
@@ -34,14 +30,14 @@ class PlayCommand(commands.Cog):
                     tracks = await extractPlaylist(query)
                     if not tracks:
                         raise ValueError("Empty playlist")
-                    
-                    voice = interaction.guild.voice_client
+
+                    voice = guild.voice_client
                     if not voice:
                         try:
                             voice = await user_channel.connect(timeout=20.0, reconnect=True)
                         except Exception as connect_error:
                             print(f"Voice connect error: {connect_error}")
-                            await interaction.followup.send(
+                            await responder(
                                 content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
                                 ephemeral=True
                             )
@@ -61,11 +57,11 @@ class PlayCommand(commands.Cog):
                     )
                     embed.add_field(
                         name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
-                        value=f"<@{interaction.user.id}>",
+                        value=f"<@{user.id}>",
                         inline=False
                     )
                     view = MusicControlView(self.bot, guild_id)
-                    await interaction.followup.send(embed=embed, view=view)
+                    await responder(embed=embed, view=view)
 
                     if not voice.is_playing() and not music_handler.is_playing:
                         await music_handler.player(voice=voice)
@@ -76,19 +72,19 @@ class PlayCommand(commands.Cog):
                 track: Track = await extractInfoByTitle(query)
         except Exception as error:
             print(f"Track extraction error: {error}")
-            await interaction.followup.send(
+            await responder(
                 content=self.bot.locale_manager.get_text(guild_id, "common.error", error=str(error)),
                 ephemeral=True
             )
             return
 
-        voice = interaction.guild.voice_client
+        voice = guild.voice_client
         if not voice:
             try:
                 voice = await user_channel.connect(timeout=20.0, reconnect=True)
             except Exception as connect_error:
                 print(f"Voice connect error: {connect_error}")
-                await interaction.followup.send(
+                await responder(
                     content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
                     ephemeral=True
                 )
@@ -103,15 +99,32 @@ class PlayCommand(commands.Cog):
         embed = createEmbed(track=track)
         embed.add_field(
             name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
-            value=f"<@{interaction.user.id}>",
+            value=f"<@{user.id}>",
             inline=False
         )
 
         view = MusicControlView(self.bot, guild_id)
-        await interaction.followup.send(embed=embed, view=view)
+        await responder(embed=embed, view=view)
 
         if not voice.is_playing():
             await music_handler.player(voice=voice)
+
+    @app_commands.command(name="play", description="Play audio from a URL, playlist, or search query.")
+    @app_commands.describe(query="The song URL, playlist link, or search title.")
+    async def play(self, interaction: discord.Interaction, query: str):
+        await interaction.response.defer()
+        async def responder(*args, **kwargs):
+            return await interaction.followup.send(*args, **kwargs)
+        await self._execute_play(responder, interaction.user, interaction.guild, query)
+
+    @commands.command(name="play")
+    async def play_prefix(self, ctx: commands.Context, *, query: str = ""):
+        if not query.strip():
+            return
+        async def responder(*args, **kwargs):
+            kwargs.pop("ephemeral", None)
+            return await ctx.send(*args, **kwargs)
+        await self._execute_play(responder, ctx.author, ctx.guild, query.strip())
 
 async def setup(bot):
     await bot.add_cog(PlayCommand(bot))
