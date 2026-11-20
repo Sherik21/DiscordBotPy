@@ -148,6 +148,12 @@ class MusicHandler:
         self.__paused_duration = 0.0
         self.__pause_start = 0.0
 
+    def start_idle_timer(self, voice: discord.VoiceProtocol):
+        self.__start_idle_timer(voice)
+
+    def cancel_idle_timer(self):
+        self.__cancel_idle_timer()
+
     def __cancel_idle_timer(self):
         if self.__idle_task and not self.__idle_task.done():
             self.__idle_task.cancel()

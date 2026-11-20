@@ -37,11 +37,15 @@ class JoinCommand(commands.Cog):
                         ephemeral=True
                     )
             else:
-                await channel.connect(timeout=20.0, reconnect=True)
+                voice_client = await channel.connect(timeout=20.0, reconnect=True)
                 await interaction.followup.send(
                     content=self.bot.locale_manager.get_text(interaction, "join.joined", channel=str(channel.name)),
                     ephemeral=True
                 )
+
+            music_handler = await self.bot.getMusicHandler(interaction.guild.id)
+            if voice_client and not music_handler.is_playing:
+                music_handler.start_idle_timer(voice_client)
         except Exception as error:
             print(f"Join error: {error}")
             await interaction.followup.send(

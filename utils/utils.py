@@ -1,11 +1,16 @@
 import asyncio
+import copy
 import json
 import re
+import time
 import urllib.request
 import discord
 import yt_dlp
 from handler.track import Track
 from handler.config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE
+
+_metadata_cache = {}
+_CACHE_TTL = 1800
 
 def createEmbed(track: Track) -> discord.Embed:
     duration_str = formatDuration(track.duration)
@@ -166,6 +171,9 @@ async def _fetch_stream_url(url: str) -> str:
 
 def _extract_info_by_url_sync(url: str) -> Track:
     clean_url = cleanTrackUrl(url)
+    cached = _metadata_cache.get(clean_url)
+    if cached and (time.time() - cached[0] < _CACHE_TTL):
+        return copy.deepcopy(cached[1])
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(clean_url, download=False)
@@ -181,6 +189,7 @@ def _extract_info_by_url_sync(url: str) -> Track:
                     track.thumbnail = info.get("thumbnail")
                     track_id = info.get("id", "")
                     track.url = f"{track.begin_url}{track_id}" if track_id else clean_url
+                    _metadata_cache[clean_url] = (time.time(), track)
                     return track
     except Exception as error:
         print(f"Primary URL extraction failed, attempting fallback: {error}")
@@ -194,6 +203,7 @@ def _extract_info_by_url_sync(url: str) -> Track:
         if author:
             sc_track.author = author
         sc_track.url = clean_url
+        _metadata_cache[clean_url] = (time.time(), sc_track)
         return sc_track
 
     raise ValueError("No video or audio information found")
@@ -230,6 +240,10 @@ async def extractPlaylist(url: str) -> list[Track]:
     return await asyncio.to_thread(_extract_playlist_sync, url)
 
 def _extract_info_by_title_sync(title: str) -> Track:
+    clean_key = title.strip().lower()
+    cached = _metadata_cache.get(clean_key)
+    if cached and (time.time() - cached[0] < _CACHE_TTL):
+        return copy.deepcopy(cached[1])
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS_FROM_TITLE) as ydl:
             search_query = f"ytsearch1:{title}"
@@ -245,12 +259,14 @@ def _extract_info_by_title_sync(title: str) -> Track:
                     track.thumbnail = entry.get("thumbnail")
                     track_id = entry.get("id", "")
                     track.url = f"{track.begin_url}{track_id}" if track_id else ""
+                    _metadata_cache[clean_key] = (time.time(), track)
                     return track
     except Exception as error:
         print(f"YouTube search error, attempting SoundCloud: {error}")
 
     sc_track = _search_soundcloud_sync(title)
     if sc_track:
+        _metadata_cache[clean_key] = (time.time(), sc_track)
         return sc_track
 
     raise ValueError("No tracks found for this title")

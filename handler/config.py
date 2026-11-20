@@ -57,7 +57,12 @@ YDL_OPTIONS = {
     "source_address": "0.0.0.0",
     "retries": 3,
     "extractor_retries": 3,
-    "remote_components": ["ejs:github"]
+    "remote_components": ["ejs:github"],
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["ios", "android", "mweb"]
+        }
+    }
 }
 
 if COOKIES_PATH.exists():
