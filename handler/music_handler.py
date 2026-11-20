@@ -13,6 +13,7 @@ class MusicHandler:
         self.__stop_flag: bool = False
         self.__skip_flag: bool = False
         self.__back_flag: bool = False
+        self.__seeking: bool = False
         self.__volume: float = 1.0
         self.__bot = bot
         self.__idle_task: asyncio.Task | None = None
@@ -167,16 +168,16 @@ class MusicHandler:
             pass
 
     async def seek(self, seconds: int, voice: discord.VoiceProtocol) -> bool:
-        current_track = self.__queue_manager.current_track
+        current_track = self.__queue_manager.get_current_track_for_embed()
         if not current_track or current_track.empty:
             return False
 
         if hasattr(voice, "is_playing") and voice.is_playing():
-            self.__stop_flag = True
+            self.__seeking = True
             voice.stop()
+            await asyncio.sleep(0.15)
+            self.__seeking = False
 
-        await asyncio.sleep(0.2)
-        self.__stop_flag = False
         self.__is_playing = True
 
         custom_before_options = f"-ss {seconds} {FFMPEG_OPTIONS.get('before_options', '')}"
@@ -193,6 +194,8 @@ class MusicHandler:
             self.__pause_start = 0.0
 
             def _after_seek(err):
+                if self.__seeking:
+                    return
                 if err:
                     print(f"Seek playback error: {err}")
                 asyncio.run_coroutine_threadsafe(
@@ -206,6 +209,15 @@ class MusicHandler:
             print(f"Error during seek: {error}")
             self.__is_playing = False
             return False
+
+    async def seek_relative(self, offset: int, voice: discord.VoiceProtocol) -> tuple[bool, int]:
+        current_pos = self.get_playback_position()
+        target_pos = max(0, current_pos + offset)
+        current_track = self.__queue_manager.get_current_track_for_embed()
+        if current_track and current_track.duration > 0:
+            target_pos = min(target_pos, current_track.duration - 1)
+        ok = await self.seek(target_pos, voice)
+        return ok, target_pos
 
     async def player(self, voice: discord.VoiceProtocol):
         if not voice or not getattr(voice, "is_connected", lambda: True)():
@@ -268,6 +280,8 @@ class MusicHandler:
             self.__pause_start = 0.0
 
             def _after_play(err):
+                if self.__seeking:
+                    return
                 if err:
                     print(f"Audio playback error: {err}")
                 asyncio.run_coroutine_threadsafe(

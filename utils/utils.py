@@ -37,15 +37,39 @@ def formatDuration(duration: int) -> str:
     return "-"
 
 def parseTimeString(time_input: str) -> int:
-    clean = time_input.strip()
+    clean = time_input.strip().lower()
     if clean.isdigit():
         return int(clean)
+    if clean.endswith("s") and clean[:-1].isdigit():
+        return int(clean[:-1])
+    if clean.endswith("m") and clean[:-1].isdigit():
+        return int(clean[:-1]) * 60
     parts = clean.split(":")
     if len(parts) == 2 and all(p.isdigit() for p in parts):
         return int(parts[0]) * 60 + int(parts[1])
     if len(parts) == 3 and all(p.isdigit() for p in parts):
         return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
     return -1
+
+def parseSeekPosition(time_input: str, current_pos: int = 0) -> int:
+    clean = time_input.strip()
+    is_relative = False
+    sign = 1
+    if clean.startswith("+"):
+        is_relative = True
+        sign = 1
+        clean = clean[1:].strip()
+    elif clean.startswith("-"):
+        is_relative = True
+        sign = -1
+        clean = clean[1:].strip()
+
+    seconds = parseTimeString(clean)
+    if seconds < 0:
+        return -1
+    if is_relative:
+        return max(0, current_pos + (sign * seconds))
+    return seconds
 
 async def isValidUrl(url: str) -> bool:
     return bool(re.compile(r"^https?://[^\s]+$").match(url.strip()))
