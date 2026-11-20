@@ -45,7 +45,8 @@
     "seek": {
         "success": "Seeked to {position}.",
         "failed": "Failed to seek.",
-        "invalid_position": "Invalid seek position."
+        "invalid_position": "Invalid seek position.",
+        "placeholder": "Seek to position..."
     },
     "queue": {
         "title_queue": "Queue",
