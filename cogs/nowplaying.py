@@ -9,11 +9,23 @@ class NowPlayingCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="nowplaying", description="Show currently playing track.")
+    @app_commands.command(
+        name="nowplaying",
+        description="Show currently playing track.",
+        description_localizations={
+            discord.Locale.russian: "Показать текущий играющий трек."
+        }
+    )
     async def nowplaying(self, interaction: discord.Interaction):
         await self._send_now_playing(interaction)
 
-    @app_commands.command(name="np", description="Alias for nowplaying.")
+    @app_commands.command(
+        name="np",
+        description="Alias for nowplaying.",
+        description_localizations={
+            discord.Locale.russian: "Показать текущий играющий трек."
+        }
+    )
     async def np(self, interaction: discord.Interaction):
         await self._send_now_playing(interaction)
 
@@ -24,7 +36,7 @@ class NowPlayingCommand(commands.Cog):
 
         if not current_track or current_track.empty:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "queue.nothing_playing"),
+                content=self.bot.locale_manager.get_text(interaction, "queue.nothing_playing"),
                 ephemeral=True
             )
             return
@@ -46,7 +58,7 @@ class NowPlayingCommand(commands.Cog):
         if current_track.thumbnail:
             embed.set_thumbnail(url=current_track.thumbnail)
 
-        view = MusicControlView(self.bot, guild_id)
+        view = MusicControlView(self.bot, interaction)
         await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):

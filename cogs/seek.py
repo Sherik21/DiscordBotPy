@@ -8,12 +8,13 @@ class SeekCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def _execute_seek(self, responder, user: discord.Member, guild: discord.Guild, position_input: str):
+    async def _execute_seek(self, responder, user: discord.Member, guild: discord.Guild, position_input: str, target=None):
+        target = target or guild.id
         guild_id = guild.id
 
         if not user.voice or not user.voice.channel:
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(target, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -21,7 +22,7 @@ class SeekCommand(commands.Cog):
         voice = guild.voice_client
         if not voice or not voice.is_connected():
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "common.bot_not_in_voice"),
+                content=self.bot.locale_manager.get_text(target, "common.bot_not_in_voice"),
                 ephemeral=True
             )
             return
@@ -30,7 +31,7 @@ class SeekCommand(commands.Cog):
         current_track = music_handler.get_current_track()
         if not current_track or current_track.empty:
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "queue.nothing_playing"),
+                content=self.bot.locale_manager.get_text(target, "queue.nothing_playing"),
                 ephemeral=True
             )
             return
@@ -39,7 +40,7 @@ class SeekCommand(commands.Cog):
         target_seconds = parseSeekPosition(position_input, current_pos)
         if target_seconds < 0 or (current_track.duration > 0 and target_seconds >= current_track.duration):
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "seek.invalid_position"),
+                content=self.bot.locale_manager.get_text(target, "seek.invalid_position"),
                 ephemeral=True
             )
             return
@@ -47,21 +48,27 @@ class SeekCommand(commands.Cog):
         success = await music_handler.seek(target_seconds, voice)
         if success:
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "seek.success", position=formatDuration(target_seconds))
+                content=self.bot.locale_manager.get_text(target, "seek.success", position=formatDuration(target_seconds))
             )
         else:
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "seek.failed"),
+                content=self.bot.locale_manager.get_text(target, "seek.failed"),
                 ephemeral=True
             )
 
-    @app_commands.command(name="seek", description="Seek to a position in current track.")
+    @app_commands.command(
+        name="seek",
+        description="Seek to a position in current track.",
+        description_localizations={
+            discord.Locale.russian: "Перемотать текущий трек на указанное время."
+        }
+    )
     @app_commands.describe(position="Timestamp (e.g. 1:30, 45, +15, -10).")
     async def seek(self, interaction: discord.Interaction, position: str):
         await interaction.response.defer()
         async def responder(*args, **kwargs):
             return await interaction.followup.send(*args, **kwargs)
-        await self._execute_seek(responder, interaction.user, interaction.guild, position)
+        await self._execute_seek(responder, interaction.user, interaction.guild, position, target=interaction)
 
     @commands.command(name="seek")
     async def seek_prefix(self, ctx: commands.Context, *, position: str = ""):
@@ -70,7 +77,7 @@ class SeekCommand(commands.Cog):
         async def responder(*args, **kwargs):
             kwargs.pop("ephemeral", None)
             return await ctx.send(*args, **kwargs)
-        await self._execute_seek(responder, ctx.author, ctx.guild, position.strip())
+        await self._execute_seek(responder, ctx.author, ctx.guild, position.strip(), target=ctx)
 
     @commands.command(name="forward", aliases=["ff"])
     async def forward_prefix(self, ctx: commands.Context, seconds: str = "15"):
@@ -78,7 +85,7 @@ class SeekCommand(commands.Cog):
         async def responder(*args, **kwargs):
             kwargs.pop("ephemeral", None)
             return await ctx.send(*args, **kwargs)
-        await self._execute_seek(responder, ctx.author, ctx.guild, pos_str)
+        await self._execute_seek(responder, ctx.author, ctx.guild, pos_str, target=ctx)
 
     @commands.command(name="rewind", aliases=["rw"])
     async def rewind_prefix(self, ctx: commands.Context, seconds: str = "15"):
@@ -86,7 +93,7 @@ class SeekCommand(commands.Cog):
         async def responder(*args, **kwargs):
             kwargs.pop("ephemeral", None)
             return await ctx.send(*args, **kwargs)
-        await self._execute_seek(responder, ctx.author, ctx.guild, pos_str)
+        await self._execute_seek(responder, ctx.author, ctx.guild, pos_str, target=ctx)
 
 async def setup(bot):
     await bot.add_cog(SeekCommand(bot))

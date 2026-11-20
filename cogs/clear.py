@@ -7,13 +7,19 @@ class ClearCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="clear", description="Clear all tracks from the queue.")
+    @app_commands.command(
+        name="clear",
+        description="Clear all tracks from the queue.",
+        description_localizations={
+            discord.Locale.russian: "Очистить все треки из очереди."
+        }
+    )
     async def clear(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
 
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -22,14 +28,14 @@ class ClearCommand(commands.Cog):
 
         if music_handler.queue_empty:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "queue.queue_empty"),
+                content=self.bot.locale_manager.get_text(interaction, "queue.queue_empty"),
                 ephemeral=True
             )
             return
 
         removed_count = music_handler.clear_queue()
         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "clear.cleared", count=removed_count)
+            content=self.bot.locale_manager.get_text(interaction, "clear.cleared", count=removed_count)
         )
 
 async def setup(bot):

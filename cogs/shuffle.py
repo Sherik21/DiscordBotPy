@@ -7,13 +7,19 @@ class ShuffleCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="shuffle", description="Shuffle tracks in the queue.")
+    @app_commands.command(
+        name="shuffle",
+        description="Shuffle tracks in the queue.",
+        description_localizations={
+            discord.Locale.russian: "Перемешать треки в очереди."
+        }
+    )
     async def shuffle(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
 
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -22,7 +28,7 @@ class ShuffleCommand(commands.Cog):
 
         if music_handler.queue_empty:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "queue.queue_empty"),
+                content=self.bot.locale_manager.get_text(interaction, "queue.queue_empty"),
                 ephemeral=True
             )
             return
@@ -30,11 +36,11 @@ class ShuffleCommand(commands.Cog):
         success = music_handler.shuffle()
         if success:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "shuffle.shuffled")
+                content=self.bot.locale_manager.get_text(interaction, "shuffle.shuffled")
             )
         else:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "shuffle.not_enough"),
+                content=self.bot.locale_manager.get_text(interaction, "shuffle.not_enough"),
                 ephemeral=True
             )
 

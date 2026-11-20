@@ -7,14 +7,20 @@ class RemoveCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="remove", description="Remove a track from the queue by its number.")
+    @app_commands.command(
+        name="remove",
+        description="Remove a track from the queue by its number.",
+        description_localizations={
+            discord.Locale.russian: "Удалить трек из очереди по его номеру."
+        }
+    )
     @app_commands.describe(index="Track position number in the queue.")
     async def remove(self, interaction: discord.Interaction, index: int):
         guild_id = interaction.guild.id
 
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -23,7 +29,7 @@ class RemoveCommand(commands.Cog):
 
         if music_handler.queue_empty:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "queue.queue_empty"),
+                content=self.bot.locale_manager.get_text(interaction, "queue.queue_empty"),
                 ephemeral=True
             )
             return
@@ -31,11 +37,11 @@ class RemoveCommand(commands.Cog):
         removed_track = music_handler.remove_track(index - 1)
         if removed_track:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "remove.removed", title=removed_track.title)
+                content=self.bot.locale_manager.get_text(interaction, "remove.removed", title=removed_track.title)
             )
         else:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "remove.invalid_index"),
+                content=self.bot.locale_manager.get_text(interaction, "remove.invalid_index"),
                 ephemeral=True
             )
 

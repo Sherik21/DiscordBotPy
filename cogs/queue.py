@@ -8,13 +8,19 @@ class QueueCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="queue", description="Show the current playback queue.")
+    @app_commands.command(
+        name="queue",
+        description="Show the current playback queue.",
+        description_localizations={
+            discord.Locale.russian: "Показать текущую очередь треков."
+        }
+    )
     async def queue(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
 
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -26,15 +32,15 @@ class QueueCommand(commands.Cog):
         queue_list = music_handler.get_queue()
 
         embed = discord.Embed(
-            title=self.bot.locale_manager.get_text(guild_id, "queue.title_queue"),
+            title=self.bot.locale_manager.get_text(interaction, "queue.title_queue"),
             color=0x5865F2
         )
 
         if not current_track or current_track.empty:
-            embed.description = self.bot.locale_manager.get_text(guild_id, "queue.nothing_playing") + "\n"
+            embed.description = self.bot.locale_manager.get_text(interaction, "queue.nothing_playing") + "\n"
         else:
             embed.description = (
-                self.bot.locale_manager.get_text(guild_id, "queue.currently_playing")
+                self.bot.locale_manager.get_text(interaction, "queue.currently_playing")
                 + f"\n[{current_track.title}]({current_track.url}) `[{formatDuration(current_track.duration)}]`\n"
             )
             if current_track.thumbnail:
@@ -42,8 +48,8 @@ class QueueCommand(commands.Cog):
 
         if not queue_list:
             embed.add_field(
-                name=self.bot.locale_manager.get_text(guild_id, "queue.next_in_list"),
-                value=self.bot.locale_manager.get_text(guild_id, "queue.queue_empty"),
+                name=self.bot.locale_manager.get_text(interaction, "queue.next_in_list"),
+                value=self.bot.locale_manager.get_text(interaction, "queue.queue_empty"),
                 inline=False
             )
         else:
@@ -61,14 +67,14 @@ class QueueCommand(commands.Cog):
             if len(queue_list) > 10:
                 count = len(queue_list) - 10
                 queue_str += "\n\n" + self.bot.locale_manager.get_text(
-                    guild_id,
+                    interaction,
                     "queue.and_another",
                     count=count,
-                    type=self.bot.locale_manager.get_text(guild_id, "queue.type_queue")
+                    type=self.bot.locale_manager.get_text(interaction, "queue.type_queue")
                 )
 
             embed.add_field(
-                name=f"{self.bot.locale_manager.get_text(guild_id, 'queue.next_in_list')} ({self.bot.locale_manager.get_text(guild_id, 'queue.total')}: {total_duration_str})",
+                name=f"{self.bot.locale_manager.get_text(interaction, 'queue.next_in_list')} ({self.bot.locale_manager.get_text(interaction, 'queue.total')}: {total_duration_str})",
                 value=queue_str,
                 inline=False
             )

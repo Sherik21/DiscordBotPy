@@ -8,13 +8,19 @@ class HistoryCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="history", description="Show playback history.")
+    @app_commands.command(
+        name="history",
+        description="Show playback history.",
+        description_localizations={
+            discord.Locale.russian: "Показать историю воспроизведения."
+        }
+    )
     async def history(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
 
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -26,15 +32,15 @@ class HistoryCommand(commands.Cog):
         history_list = music_handler.get_history()
 
         embed = discord.Embed(
-            title=self.bot.locale_manager.get_text(guild_id, "queue.title_history"),
+            title=self.bot.locale_manager.get_text(interaction, "queue.title_history"),
             color=0x5865F2
         )
 
         if not current_track or current_track.empty:
-            embed.description = self.bot.locale_manager.get_text(guild_id, "queue.nothing_playing") + "\n"
+            embed.description = self.bot.locale_manager.get_text(interaction, "queue.nothing_playing") + "\n"
         else:
             embed.description = (
-                self.bot.locale_manager.get_text(guild_id, "queue.currently_playing")
+                self.bot.locale_manager.get_text(interaction, "queue.currently_playing")
                 + f"\n[{current_track.title}]({current_track.url}) `[{formatDuration(current_track.duration)}]`\n"
             )
             if current_track.thumbnail:
@@ -42,8 +48,8 @@ class HistoryCommand(commands.Cog):
 
         if not history_list:
             embed.add_field(
-                name=self.bot.locale_manager.get_text(guild_id, "queue.previous_in_list"),
-                value=self.bot.locale_manager.get_text(guild_id, "queue.history_empty"),
+                name=self.bot.locale_manager.get_text(interaction, "queue.previous_in_list"),
+                value=self.bot.locale_manager.get_text(interaction, "queue.history_empty"),
                 inline=False
             )
         else:
@@ -61,14 +67,14 @@ class HistoryCommand(commands.Cog):
             if len(history_list) > 10:
                 count = len(history_list) - 10
                 history_str += "\n\n" + self.bot.locale_manager.get_text(
-                    guild_id,
+                    interaction,
                     "queue.and_another",
                     count=count,
-                    type=self.bot.locale_manager.get_text(guild_id, "queue.type_history")
+                    type=self.bot.locale_manager.get_text(interaction, "queue.type_history")
                 )
 
             embed.add_field(
-                name=f"{self.bot.locale_manager.get_text(guild_id, 'queue.previous_in_list')} ({self.bot.locale_manager.get_text(guild_id, 'queue.total')}: {total_duration_str})",
+                name=f"{self.bot.locale_manager.get_text(interaction, 'queue.previous_in_list')} ({self.bot.locale_manager.get_text(interaction, 'queue.total')}: {total_duration_str})",
                 value=history_str,
                 inline=False
             )

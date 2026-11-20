@@ -1,7 +1,8 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union, Optional
+import discord
 
 class LocaleManager:
     def __init__(self, bot):
@@ -52,8 +53,33 @@ class LocaleManager:
             return True
         return False
 
-    def get_text(self, guild_id: int, key: str, **kwargs) -> str:
-        lang = self.get_guild_locale(guild_id)
+    def resolve_locale(self, target) -> str:
+        if target is None:
+            return "eng"
+        if isinstance(target, str):
+            if target in self.locales:
+                return target
+            if target.lower().startswith("ru"):
+                return "rus"
+            return "eng"
+        if isinstance(target, discord.Interaction):
+            if hasattr(target, "locale") and target.locale:
+                loc = str(target.locale).lower()
+                if loc.startswith("ru"):
+                    return "rus"
+                return "eng"
+            guild_id = target.guild_id if target.guild_id else (target.guild.id if target.guild else None)
+            if guild_id:
+                return self.get_guild_locale(guild_id)
+            return "eng"
+        if hasattr(target, "guild") and target.guild:
+            return self.get_guild_locale(target.guild.id)
+        if isinstance(target, int):
+            return self.get_guild_locale(target)
+        return "eng"
+
+    def get_text(self, target, key: str, **kwargs) -> str:
+        lang = self.resolve_locale(target)
         locale_data = self.locales.get(lang, self.locales.get("eng", {}))
 
         parts = key.split(".")

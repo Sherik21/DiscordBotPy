@@ -10,12 +10,13 @@ class PlayCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def _execute_play(self, responder, user: discord.Member, guild: discord.Guild, query: str):
+    async def _execute_play(self, responder, user: discord.Member, guild: discord.Guild, query: str, target=None):
+        target = target or guild.id
         guild_id = guild.id
 
         if not user.voice or not user.voice.channel:
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(target, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -38,7 +39,7 @@ class PlayCommand(commands.Cog):
                         except Exception as connect_error:
                             print(f"Voice connect error: {connect_error}")
                             await responder(
-                                content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
+                                content=self.bot.locale_manager.get_text(target, "join.cannot_join"),
                                 ephemeral=True
                             )
                             return
@@ -51,16 +52,16 @@ class PlayCommand(commands.Cog):
                     music_handler.add_tracks(tracks)
 
                     embed = discord.Embed(
-                        title=self.bot.locale_manager.get_text(guild_id, "playlist.title"),
-                        description=self.bot.locale_manager.get_text(guild_id, "playlist.added", count=len(tracks)),
+                        title=self.bot.locale_manager.get_text(target, "playlist.title"),
+                        description=self.bot.locale_manager.get_text(target, "playlist.added", count=len(tracks)),
                         color=0x5865F2
                     )
                     embed.add_field(
-                        name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
+                        name=self.bot.locale_manager.get_text(target, "common.added_by"),
                         value=f"<@{user.id}>",
                         inline=False
                     )
-                    view = MusicControlView(self.bot, guild_id)
+                    view = MusicControlView(self.bot, target)
                     await responder(embed=embed, view=view)
 
                     if not voice.is_playing() and not music_handler.is_playing:
@@ -73,7 +74,7 @@ class PlayCommand(commands.Cog):
         except Exception as error:
             print(f"Track extraction error: {error}")
             await responder(
-                content=self.bot.locale_manager.get_text(guild_id, "common.error", error=str(error)),
+                content=self.bot.locale_manager.get_text(target, "common.error", error=str(error)),
                 ephemeral=True
             )
             return
@@ -85,7 +86,7 @@ class PlayCommand(commands.Cog):
             except Exception as connect_error:
                 print(f"Voice connect error: {connect_error}")
                 await responder(
-                    content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
+                    content=self.bot.locale_manager.get_text(target, "join.cannot_join"),
                     ephemeral=True
                 )
                 return
@@ -98,24 +99,30 @@ class PlayCommand(commands.Cog):
         music_handler.add_track(track)
         embed = createEmbed(track=track)
         embed.add_field(
-            name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
+            name=self.bot.locale_manager.get_text(target, "common.added_by"),
             value=f"<@{user.id}>",
             inline=False
         )
 
-        view = MusicControlView(self.bot, guild_id)
+        view = MusicControlView(self.bot, target)
         await responder(embed=embed, view=view)
 
         if not voice.is_playing():
             await music_handler.player(voice=voice)
 
-    @app_commands.command(name="play", description="Play audio from a URL, playlist, or search query.")
+    @app_commands.command(
+        name="play",
+        description="Play audio from a URL, playlist, or search query.",
+        description_localizations={
+            discord.Locale.russian: "Воспроизвести музыку по ссылке, плейлисту или названию."
+        }
+    )
     @app_commands.describe(query="The song URL, playlist link, or search title.")
     async def play(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
         async def responder(*args, **kwargs):
             return await interaction.followup.send(*args, **kwargs)
-        await self._execute_play(responder, interaction.user, interaction.guild, query)
+        await self._execute_play(responder, interaction.user, interaction.guild, query, target=interaction)
 
     @commands.command(name="play")
     async def play_prefix(self, ctx: commands.Context, *, query: str = ""):
@@ -124,7 +131,7 @@ class PlayCommand(commands.Cog):
         async def responder(*args, **kwargs):
             kwargs.pop("ephemeral", None)
             return await ctx.send(*args, **kwargs)
-        await self._execute_play(responder, ctx.author, ctx.guild, query.strip())
+        await self._execute_play(responder, ctx.author, ctx.guild, query.strip(), target=ctx)
 
 async def setup(bot):
     await bot.add_cog(PlayCommand(bot))

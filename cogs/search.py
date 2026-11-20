@@ -10,7 +10,13 @@ class SearchCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="search", description="Search and play audio by song title.")
+    @app_commands.command(
+        name="search",
+        description="Search and play audio by song title.",
+        description_localizations={
+            discord.Locale.russian: "Найти и воспроизвести трек по названию."
+        }
+    )
     @app_commands.describe(title="The song title to search and play.")
     async def search(self, interaction: discord.Interaction, title: str):
         await interaction.response.defer()
@@ -18,7 +24,7 @@ class SearchCommand(commands.Cog):
 
         if not interaction.user.voice or not interaction.user.voice.channel:
             await interaction.followup.send(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -32,7 +38,7 @@ class SearchCommand(commands.Cog):
             except Exception as connect_error:
                 print(f"Voice connect error: {connect_error}")
                 await interaction.followup.send(
-                    content=self.bot.locale_manager.get_text(guild_id, "join.cannot_join"),
+                    content=self.bot.locale_manager.get_text(interaction, "join.cannot_join"),
                     ephemeral=True
                 )
                 return
@@ -50,7 +56,7 @@ class SearchCommand(commands.Cog):
         except Exception as error:
             print(f"Track search error: {error}")
             await interaction.followup.send(
-                content=self.bot.locale_manager.get_text(guild_id, "common.error", error=str(error)),
+                content=self.bot.locale_manager.get_text(interaction, "common.error", error=str(error)),
                 ephemeral=True
             )
             return
@@ -58,12 +64,12 @@ class SearchCommand(commands.Cog):
         music_handler.add_track(track)
         embed = createEmbed(track=track)
         embed.add_field(
-            name=self.bot.locale_manager.get_text(guild_id, "common.added_by"),
+            name=self.bot.locale_manager.get_text(interaction, "common.added_by"),
             value=f"<@{interaction.user.id}>",
             inline=False
         )
 
-        view = MusicControlView(self.bot, guild_id)
+        view = MusicControlView(self.bot, interaction)
         await interaction.followup.send(embed=embed, view=view)
 
         if voice.is_playing() or music_handler.is_playing:

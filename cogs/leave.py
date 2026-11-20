@@ -7,12 +7,18 @@ class LeaveCommand(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="leave", description="Disconnect the bot from the voice channel.")
+    @app_commands.command(
+        name="leave",
+        description="Disconnect the bot from the voice channel.",
+        description_localizations={
+            discord.Locale.russian: "Отключить бота от голосового канала."
+        }
+    )
     async def leave(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
         if not interaction.user.voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.not_in_voice"),
                 ephemeral=True
             )
             return
@@ -20,7 +26,7 @@ class LeaveCommand(commands.Cog):
         voice = interaction.guild.voice_client
         if not voice:
             await interaction.response.send_message(
-                content=self.bot.locale_manager.get_text(guild_id, "common.bot_not_in_voice"),
+                content=self.bot.locale_manager.get_text(interaction, "common.bot_not_in_voice"),
                 ephemeral=True
             )
             return
@@ -33,7 +39,7 @@ class LeaveCommand(commands.Cog):
         await voice.disconnect()
 
         await interaction.response.send_message(
-            content=self.bot.locale_manager.get_text(guild_id, "leave.left"),
+            content=self.bot.locale_manager.get_text(interaction, "leave.left"),
             ephemeral=True
         )
 
