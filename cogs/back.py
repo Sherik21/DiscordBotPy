@@ -9,10 +9,7 @@ class BackCommand(commands.Cog):
 
     @app_commands.command(
         name="back",
-        description="Return to the previous track.",
-        description_localizations={
-            discord.Locale.russian: "Вернуться к предыдущему треку."
-        }
+        description="Return to the previous track."
     )
     async def back(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

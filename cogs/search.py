@@ -12,10 +12,7 @@ class SearchCommand(commands.Cog):
 
     @app_commands.command(
         name="search",
-        description="Search and play audio by song title.",
-        description_localizations={
-            discord.Locale.russian: "Найти и воспроизвести трек по названию."
-        }
+        description="Search and play audio by song title."
     )
     @app_commands.describe(title="The song title to search and play.")
     async def search(self, interaction: discord.Interaction, title: str):

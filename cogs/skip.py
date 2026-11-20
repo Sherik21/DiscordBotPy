@@ -42,10 +42,7 @@ class SkipCommand(commands.Cog):
 
     @app_commands.command(
         name="skip",
-        description="Skip the current track.",
-        description_localizations={
-            discord.Locale.russian: "Пропустить текущий трек."
-        }
+        description="Skip the current track."
     )
     async def skip(self, interaction: discord.Interaction):
         async def responder(*args, **kwargs):

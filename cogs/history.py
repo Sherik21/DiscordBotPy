@@ -10,10 +10,7 @@ class HistoryCommand(commands.Cog):
 
     @app_commands.command(
         name="history",
-        description="Show playback history.",
-        description_localizations={
-            discord.Locale.russian: "Показать историю воспроизведения."
-        }
+        description="Show playback history."
     )
     async def history(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

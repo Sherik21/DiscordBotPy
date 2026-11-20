@@ -9,10 +9,7 @@ class RemoveCommand(commands.Cog):
 
     @app_commands.command(
         name="remove",
-        description="Remove a track from the queue by its number.",
-        description_localizations={
-            discord.Locale.russian: "Удалить трек из очереди по его номеру."
-        }
+        description="Remove a track from the queue by its number."
     )
     @app_commands.describe(index="Track position number in the queue.")
     async def remove(self, interaction: discord.Interaction, index: int):

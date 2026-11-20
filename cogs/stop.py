@@ -38,10 +38,7 @@ class StopCommand(commands.Cog):
 
     @app_commands.command(
         name="stop",
-        description="Stop playback and clear current track.",
-        description_localizations={
-            discord.Locale.russian: "Остановить воспроизведение и очистить очередь."
-        }
+        description="Stop playback and clear current track."
     )
     async def stop(self, interaction: discord.Interaction):
         async def responder(*args, **kwargs):

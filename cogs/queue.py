@@ -10,10 +10,7 @@ class QueueCommand(commands.Cog):
 
     @app_commands.command(
         name="queue",
-        description="Show the current playback queue.",
-        description_localizations={
-            discord.Locale.russian: "Показать текущую очередь треков."
-        }
+        description="Show the current playback queue."
     )
     async def queue(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

@@ -10,10 +10,7 @@ class RepeatAllCommand(commands.Cog):
 
     @app_commands.command(
         name="repeat_all",
-        description="Toggle repeat mode for entire queue.",
-        description_localizations={
-            discord.Locale.russian: "Включить/выключить повтор всей очереди."
-        }
+        description="Toggle repeat mode for entire queue."
     )
     async def repeat_all(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

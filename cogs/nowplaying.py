@@ -11,20 +11,14 @@ class NowPlayingCommand(commands.Cog):
 
     @app_commands.command(
         name="nowplaying",
-        description="Show currently playing track.",
-        description_localizations={
-            discord.Locale.russian: "Показать текущий играющий трек."
-        }
+        description="Show currently playing track."
     )
     async def nowplaying(self, interaction: discord.Interaction):
         await self._send_now_playing(interaction)
 
     @app_commands.command(
         name="np",
-        description="Alias for nowplaying.",
-        description_localizations={
-            discord.Locale.russian: "Показать текущий играющий трек."
-        }
+        description="Alias for nowplaying."
     )
     async def np(self, interaction: discord.Interaction):
         await self._send_now_playing(interaction)

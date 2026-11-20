@@ -112,10 +112,7 @@ class PlayCommand(commands.Cog):
 
     @app_commands.command(
         name="play",
-        description="Play audio from a URL, playlist, or search query.",
-        description_localizations={
-            discord.Locale.russian: "Воспроизвести музыку по ссылке, плейлисту или названию."
-        }
+        description="Play audio from a URL, playlist, or search query."
     )
     @app_commands.describe(query="The song URL, playlist link, or search title.")
     async def play(self, interaction: discord.Interaction, query: str):

@@ -9,10 +9,7 @@ class PauseCommand(commands.Cog):
 
     @app_commands.command(
         name="pause",
-        description="Pause current playback.",
-        description_localizations={
-            discord.Locale.russian: "Приостановить воспроизведение."
-        }
+        description="Pause current playback."
     )
     async def pause(self, interaction: discord.Interaction):
         if not interaction.user.voice:
@@ -51,10 +48,7 @@ class PauseCommand(commands.Cog):
 
     @app_commands.command(
         name="resume",
-        description="Resume paused playback.",
-        description_localizations={
-            discord.Locale.russian: "Возобновить воспроизведение."
-        }
+        description="Resume paused playback."
     )
     async def resume(self, interaction: discord.Interaction):
         if not interaction.user.voice:

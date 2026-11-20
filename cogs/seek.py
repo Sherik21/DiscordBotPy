@@ -58,10 +58,7 @@ class SeekCommand(commands.Cog):
 
     @app_commands.command(
         name="seek",
-        description="Seek to a position in current track.",
-        description_localizations={
-            discord.Locale.russian: "Перемотать текущий трек на указанное время."
-        }
+        description="Seek to a position in current track."
     )
     @app_commands.describe(position="Timestamp (e.g. 1:30, 45, +15, -10).")
     async def seek(self, interaction: discord.Interaction, position: str):

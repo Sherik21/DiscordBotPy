@@ -9,10 +9,7 @@ class VolumeCommand(commands.Cog):
 
     @app_commands.command(
         name="volume",
-        description="Set playback volume (1-100%).",
-        description_localizations={
-            discord.Locale.russian: "Настроить громкость воспроизведения (1-100%)."
-        }
+        description="Set playback volume (1-100%)."
     )
     @app_commands.describe(level="Volume level from 1 to 100.")
     async def volume(self, interaction: discord.Interaction, level: app_commands.Range[int, 1, 100] | None = None):

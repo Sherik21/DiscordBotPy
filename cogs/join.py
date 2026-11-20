@@ -8,10 +8,7 @@ class JoinCommand(commands.Cog):
 
     @app_commands.command(
         name="join",
-        description="Connect the bot to your voice channel.",
-        description_localizations={
-            discord.Locale.russian: "Подключить бота к вашему голосовому каналу."
-        }
+        description="Connect the bot to your voice channel."
     )
     async def join(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)

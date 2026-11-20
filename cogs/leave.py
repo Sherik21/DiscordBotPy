@@ -9,10 +9,7 @@ class LeaveCommand(commands.Cog):
 
     @app_commands.command(
         name="leave",
-        description="Disconnect the bot from the voice channel.",
-        description_localizations={
-            discord.Locale.russian: "Отключить бота от голосового канала."
-        }
+        description="Disconnect the bot from the voice channel."
     )
     async def leave(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

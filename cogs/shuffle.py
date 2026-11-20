@@ -9,10 +9,7 @@ class ShuffleCommand(commands.Cog):
 
     @app_commands.command(
         name="shuffle",
-        description="Shuffle tracks in the queue.",
-        description_localizations={
-            discord.Locale.russian: "Перемешать треки в очереди."
-        }
+        description="Shuffle tracks in the queue."
     )
     async def shuffle(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

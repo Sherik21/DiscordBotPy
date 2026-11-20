@@ -9,10 +9,7 @@ class ClearCommand(commands.Cog):
 
     @app_commands.command(
         name="clear",
-        description="Clear all tracks from the queue.",
-        description_localizations={
-            discord.Locale.russian: "Очистить все треки из очереди."
-        }
+        description="Clear all tracks from the queue."
     )
     async def clear(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id

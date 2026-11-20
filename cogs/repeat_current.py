@@ -10,10 +10,7 @@ class RepeatCurrentCommand(commands.Cog):
 
     @app_commands.command(
         name="repeat_one",
-        description="Toggle repeat mode for current track.",
-        description_localizations={
-            discord.Locale.russian: "Включить/выключить повтор текущего трека."
-        }
+        description="Toggle repeat mode for current track."
     )
     async def repeat_current(self, interaction: discord.Interaction):
         guild_id = interaction.guild.id
