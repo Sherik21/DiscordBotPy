@@ -1,10 +1,12 @@
 import asyncio
+import os
 import time
 import discord
 from .track import Track
 from .config import FFMPEG_OPTIONS, FFMPEG_EXECUTABLE
 from .queue_manager import QueueManager, RepeatMode
 from utils.utils import updateWorkingStreamLink
+from utils.audio_cache import cache_track_background
 
 class MusicHandler:
     def __init__(self, bot):
@@ -186,13 +188,17 @@ class MusicHandler:
 
         self.__is_playing = True
 
-        custom_before_options = f"-ss {seconds} {FFMPEG_OPTIONS.get('before_options', '')}"
+        is_local = os.path.exists(current_track.stream_url)
+        if is_local:
+            custom_before_options = f"-ss {seconds}"
+        else:
+            custom_before_options = f"-ss {seconds} {FFMPEG_OPTIONS.get('before_options', '')}"
         try:
             raw_source = discord.FFmpegPCMAudio(
                 current_track.stream_url,
                 executable=FFMPEG_EXECUTABLE,
                 before_options=custom_before_options,
-                options=FFMPEG_OPTIONS.get("options", "-vn")
+                options="-vn -loglevel warning"
             )
             source = discord.PCMVolumeTransformer(raw_source, volume=self.__volume)
             self.__start_time = time.time() - seconds
@@ -275,10 +281,17 @@ class MusicHandler:
                     if getattr(voice._connection, "can_encrypt", False):
                         break
                     await asyncio.sleep(0.05)
+            is_local = os.path.exists(track.stream_url)
+            if is_local:
+                opts = {"options": "-vn -loglevel warning"}
+            else:
+                opts = FFMPEG_OPTIONS
+                cache_track_background(track.url, track.stream_url, track.duration)
+
             raw_source = discord.FFmpegPCMAudio(
                 track.stream_url,
                 executable=FFMPEG_EXECUTABLE,
-                **FFMPEG_OPTIONS
+                **opts
             )
             source = discord.PCMVolumeTransformer(raw_source, volume=self.__volume)
             self.__start_time = time.time()

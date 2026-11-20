@@ -1,3 +1,5 @@
+import os
+
 class Track:
    def __init__(self, title="", author="", url="", duration=0, thumbnail=None):
       self.title = title
@@ -14,7 +16,7 @@ class Track:
    
    @stream_url.setter
    def stream_url(self, value: str) -> None:
-      if not value.startswith("http"):
+      if not value.startswith("http") and not os.path.exists(value) and not os.path.isabs(value):
          raise ValueError("Invalid stream url")
       self.__stream_url = value
 
@@ -25,4 +27,3 @@ class Track:
    @property
    def empty(self) -> bool:
       return self.__stream_url == ""
-   

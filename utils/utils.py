@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import json
+import os
 import re
 import time
 import urllib.request
@@ -8,6 +9,7 @@ import discord
 import yt_dlp
 from handler.track import Track
 from handler.config import YDL_OPTIONS, YDL_OPTIONS_FROM_TITLE
+from .audio_cache import get_cached_track_file
 
 _metadata_cache = {}
 _CACHE_TTL = 1800
@@ -93,6 +95,25 @@ def isPlaylistUrl(url: str) -> bool:
         return False
     return "list=" in clean or "/playlist" in clean or "/sets/" in clean or "/album/" in clean
 
+def isSpotifyUrl(url: str) -> bool:
+    clean = url.strip().lower()
+    return "open.spotify.com/track/" in clean or "spotify.link/" in clean
+
+def _fetch_spotify_metadata(url: str) -> tuple[str, str, str]:
+    clean_url = url.strip()
+    oembed_url = f"https://open.spotify.com/oembed?url={clean_url}"
+    try:
+        req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as res:
+            data = json.loads(res.read().decode("utf-8"))
+            title = data.get("title", "")
+            author = data.get("author_name", "")
+            thumb = data.get("thumbnail_url", "")
+            return title, author, thumb
+    except Exception as error:
+        print(f"Spotify metadata fetch error: {error}")
+        return "", "", ""
+
 def _fetch_youtube_oembed_metadata(url: str) -> tuple[str, str]:
     clean_url = cleanTrackUrl(url)
     oembed_url = f"https://www.youtube.com/oembed?url={clean_url}&format=json"
@@ -136,7 +157,11 @@ def _search_soundcloud_sync(query: str) -> Track | None:
         return None
 
 async def updateWorkingStreamLink(track: Track) -> Track:
-    if track.stream_url and track.stream_url.startswith("http"):
+    cached_file = get_cached_track_file(track.url)
+    if cached_file:
+        track.stream_url = cached_file
+        return track
+    if track.stream_url and (track.stream_url.startswith("http") or os.path.exists(track.stream_url)):
         return track
     new_stream_url = await _fetch_stream_url(track.url)
     if new_stream_url:
@@ -145,6 +170,9 @@ async def updateWorkingStreamLink(track: Track) -> Track:
 
 def _extract_stream_url_sync(url: str) -> str:
     clean_url = cleanTrackUrl(url)
+    cached_file = get_cached_track_file(clean_url)
+    if cached_file:
+        return cached_file
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(clean_url, download=False)
@@ -174,6 +202,19 @@ def _extract_info_by_url_sync(url: str) -> Track:
     cached = _metadata_cache.get(clean_url)
     if cached and (time.time() - cached[0] < _CACHE_TTL):
         return copy.deepcopy(cached[1])
+
+    if isSpotifyUrl(clean_url):
+        title, author, thumb = _fetch_spotify_metadata(clean_url)
+        search_query = f"{title} {author}".strip() if author else title
+        if not search_query:
+            raise ValueError("Failed to extract Spotify track metadata")
+        track = _extract_info_by_title_sync(search_query)
+        track.url = clean_url
+        if thumb:
+            track.thumbnail = thumb
+        _metadata_cache[clean_url] = (time.time(), track)
+        return track
+
     try:
         with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(clean_url, download=False)

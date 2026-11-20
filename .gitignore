@@ -6,3 +6,4 @@ venv/
 tools/
 cookies.txt
 *.log
+cache/
