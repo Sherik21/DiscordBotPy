@@ -46,8 +46,9 @@
         "success": "Seeked to {position}.",
         "failed": "Failed to seek.",
         "invalid_position": "Invalid seek position.",
+        "button_label": "Set Time",
         "modal_title": "Track Seek",
-        "modal_label": "Time (seconds or mm:ss)",
+        "modal_label": "Specify time (seconds or mm:ss)",
         "modal_placeholder": "e.g. 1:30, 45, +30, -15"
     },
     "queue": {

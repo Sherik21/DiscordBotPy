@@ -3,20 +3,20 @@ from handler.music_handler import MusicHandler
 from utils.utils import formatDuration, parseSeekPosition
 
 class SeekModal(discord.ui.Modal):
-    time_input = discord.ui.TextInput(
-        label="Время (секунды или mm:ss)",
-        placeholder="например: 1:30, 45, +30, -15",
-        required=True,
-        max_length=15
-    )
-
     def __init__(self, bot, guild_id: int):
         title = bot.locale_manager.get_text(guild_id, "seek.modal_title")
         super().__init__(title=title)
         self.bot = bot
         self.guild_id = guild_id
-        self.time_input.label = bot.locale_manager.get_text(guild_id, "seek.modal_label")
-        self.time_input.placeholder = bot.locale_manager.get_text(guild_id, "seek.modal_placeholder")
+        label_text = bot.locale_manager.get_text(guild_id, "seek.modal_label")
+        placeholder_text = bot.locale_manager.get_text(guild_id, "seek.modal_placeholder")
+        self.time_input = discord.ui.TextInput(
+            label=label_text,
+            placeholder=placeholder_text,
+            required=True,
+            max_length=15
+        )
+        self.add_item(self.time_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         voice = interaction.guild.voice_client
@@ -62,6 +62,9 @@ class MusicControlView(discord.ui.View):
         super().__init__(timeout=None)
         self.bot = bot
         self.guild_id = guild_id
+        btn_label = bot.locale_manager.get_text(guild_id, "seek.button_label")
+        if btn_label:
+            self.open_seek_modal.label = btn_label
 
     @discord.ui.button(label="Pause / Resume", style=discord.ButtonStyle.secondary, emoji="⏯️", row=0)
     async def toggle_pause(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -153,7 +156,7 @@ class MusicControlView(discord.ui.View):
                 ephemeral=True
             )
 
-    @discord.ui.button(label="Seek", style=discord.ButtonStyle.secondary, emoji="⏱️", row=0)
+    @discord.ui.button(label="Указать время", style=discord.ButtonStyle.secondary, emoji="⏱️", row=0)
     async def open_seek_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(SeekModal(self.bot, self.guild_id))
 
