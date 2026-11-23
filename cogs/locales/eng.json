@@ -9,6 +9,7 @@
         "already_in_channel": "Already in {channel}.",
         "cannot_join": "Cannot join voice channel.",
         "missing_permissions": "Bot is missing permissions to join this channel (needs 'Connect' and 'Speak').",
+        "timeout": "Connection timeout: Discord voice server did not respond in 20 seconds. Check bot 'Connect' permissions on this channel or set voice region to 'Automatic'.",
         "joined": "Joined {channel}."
     },
     "leave": {

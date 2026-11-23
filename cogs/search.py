@@ -27,6 +27,14 @@ class SearchCommand(commands.Cog):
             return
 
         user_channel = interaction.user.voice.channel
+        bot_perms = user_channel.permissions_for(interaction.guild.me)
+        if not bot_perms.connect or not bot_perms.view_channel:
+            await interaction.followup.send(
+                content=self.bot.locale_manager.get_text(interaction, "join.missing_permissions"),
+                ephemeral=True
+            )
+            return
+
         voice = interaction.guild.voice_client
         if voice and not voice.is_connected():
             try:
@@ -39,11 +47,15 @@ class SearchCommand(commands.Cog):
             try:
                 voice = await user_channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
             except Exception as connect_error:
-                print(f"Voice connect error: {connect_error}")
+                err_name = type(connect_error).__name__
+                err_str = str(connect_error).strip()
+                print(f"Voice connect error: {err_name} - {connect_error}", flush=True)
                 if isinstance(connect_error, discord.Forbidden):
                     msg = self.bot.locale_manager.get_text(interaction, "join.missing_permissions")
+                elif isinstance(connect_error, asyncio.TimeoutError) or err_name == "TimeoutError" or not err_str:
+                    msg = self.bot.locale_manager.get_text(interaction, "join.timeout")
                 else:
-                    msg = f"{self.bot.locale_manager.get_text(interaction, 'join.cannot_join')} ({connect_error})"
+                    msg = f"{self.bot.locale_manager.get_text(interaction, 'join.cannot_join')} ({err_str or err_name})"
                 await interaction.followup.send(content=msg, ephemeral=True)
                 return
         elif voice.channel != user_channel:

@@ -29,6 +29,14 @@ class JoinCommand(commands.Cog):
                 pass
             voice_client = None
 
+        bot_perms = channel.permissions_for(interaction.guild.me)
+        if not bot_perms.connect or not bot_perms.view_channel:
+            await interaction.followup.send(
+                content=self.bot.locale_manager.get_text(interaction, "join.missing_permissions"),
+                ephemeral=True
+            )
+            return
+
         try:
             if voice_client:
                 if voice_client.channel == channel:
@@ -53,11 +61,15 @@ class JoinCommand(commands.Cog):
             if voice_client and not music_handler.is_playing:
                 music_handler.start_idle_timer(voice_client)
         except Exception as error:
-            print(f"Join error: {error}")
+            err_name = type(error).__name__
+            err_str = str(error).strip()
+            print(f"Join error: {err_name} - {error}", flush=True)
             if isinstance(error, discord.Forbidden):
                 msg = self.bot.locale_manager.get_text(interaction, "join.missing_permissions")
+            elif isinstance(error, asyncio.TimeoutError) or err_name == "TimeoutError" or not err_str:
+                msg = self.bot.locale_manager.get_text(interaction, "join.timeout")
             else:
-                msg = f"{self.bot.locale_manager.get_text(interaction, 'join.cannot_join')} ({error})"
+                msg = f"{self.bot.locale_manager.get_text(interaction, 'join.cannot_join')} ({err_str or err_name})"
             await interaction.followup.send(content=msg, ephemeral=True)
 
 async def setup(bot):

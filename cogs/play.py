@@ -32,6 +32,14 @@ class PlayCommand(commands.Cog):
                     if not tracks:
                         raise ValueError("Empty playlist")
 
+                    bot_perms = user_channel.permissions_for(guild.me)
+                    if not bot_perms.connect or not bot_perms.view_channel:
+                        await responder(
+                            content=self.bot.locale_manager.get_text(target, "join.missing_permissions"),
+                            ephemeral=True
+                        )
+                        return
+
                     voice = guild.voice_client
                     if voice and not voice.is_connected():
                         try:
@@ -44,11 +52,15 @@ class PlayCommand(commands.Cog):
                         try:
                             voice = await user_channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
                         except Exception as connect_error:
-                            print(f"Voice connect error: {connect_error}")
+                            err_name = type(connect_error).__name__
+                            err_str = str(connect_error).strip()
+                            print(f"Voice connect error: {err_name} - {connect_error}", flush=True)
                             if isinstance(connect_error, discord.Forbidden):
                                 msg = self.bot.locale_manager.get_text(target, "join.missing_permissions")
+                            elif isinstance(connect_error, asyncio.TimeoutError) or err_name == "TimeoutError" or not err_str:
+                                msg = self.bot.locale_manager.get_text(target, "join.timeout")
                             else:
-                                msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({connect_error})"
+                                msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({err_str or err_name})"
                             await responder(content=msg, ephemeral=True)
                             return
                     elif voice.channel != user_channel:
@@ -87,6 +99,14 @@ class PlayCommand(commands.Cog):
             )
             return
 
+        bot_perms = user_channel.permissions_for(guild.me)
+        if not bot_perms.connect or not bot_perms.view_channel:
+            await responder(
+                content=self.bot.locale_manager.get_text(target, "join.missing_permissions"),
+                ephemeral=True
+            )
+            return
+
         voice = guild.voice_client
         if voice and not voice.is_connected():
             try:
@@ -99,11 +119,15 @@ class PlayCommand(commands.Cog):
             try:
                 voice = await user_channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
             except Exception as connect_error:
-                print(f"Voice connect error: {connect_error}")
+                err_name = type(connect_error).__name__
+                err_str = str(connect_error).strip()
+                print(f"Voice connect error: {err_name} - {connect_error}", flush=True)
                 if isinstance(connect_error, discord.Forbidden):
                     msg = self.bot.locale_manager.get_text(target, "join.missing_permissions")
+                elif isinstance(connect_error, asyncio.TimeoutError) or err_name == "TimeoutError" or not err_str:
+                    msg = self.bot.locale_manager.get_text(target, "join.timeout")
                 else:
-                    msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({connect_error})"
+                    msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({err_str or err_name})"
                 await responder(content=msg, ephemeral=True)
                 return
         elif voice.channel != user_channel:
