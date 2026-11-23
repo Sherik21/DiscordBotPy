@@ -33,15 +33,23 @@ class PlayCommand(commands.Cog):
                         raise ValueError("Empty playlist")
 
                     voice = guild.voice_client
+                    if voice and not voice.is_connected():
+                        try:
+                            await voice.disconnect(force=True)
+                        except Exception:
+                            pass
+                        voice = None
+
                     if not voice:
                         try:
-                            voice = await user_channel.connect(timeout=20.0, reconnect=True)
+                            voice = await user_channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
                         except Exception as connect_error:
                             print(f"Voice connect error: {connect_error}")
-                            await responder(
-                                content=self.bot.locale_manager.get_text(target, "join.cannot_join"),
-                                ephemeral=True
-                            )
+                            if isinstance(connect_error, discord.Forbidden):
+                                msg = self.bot.locale_manager.get_text(target, "join.missing_permissions")
+                            else:
+                                msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({connect_error})"
+                            await responder(content=msg, ephemeral=True)
                             return
                     elif voice.channel != user_channel:
                         try:
@@ -80,15 +88,23 @@ class PlayCommand(commands.Cog):
             return
 
         voice = guild.voice_client
+        if voice and not voice.is_connected():
+            try:
+                await voice.disconnect(force=True)
+            except Exception:
+                pass
+            voice = None
+
         if not voice:
             try:
-                voice = await user_channel.connect(timeout=20.0, reconnect=True)
+                voice = await user_channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
             except Exception as connect_error:
                 print(f"Voice connect error: {connect_error}")
-                await responder(
-                    content=self.bot.locale_manager.get_text(target, "join.cannot_join"),
-                    ephemeral=True
-                )
+                if isinstance(connect_error, discord.Forbidden):
+                    msg = self.bot.locale_manager.get_text(target, "join.missing_permissions")
+                else:
+                    msg = f"{self.bot.locale_manager.get_text(target, 'join.cannot_join')} ({connect_error})"
+                await responder(content=msg, ephemeral=True)
                 return
         elif voice.channel != user_channel:
             try:

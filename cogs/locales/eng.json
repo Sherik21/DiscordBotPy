@@ -8,6 +8,7 @@
     "join": {
         "already_in_channel": "Already in {channel}.",
         "cannot_join": "Cannot join voice channel.",
+        "missing_permissions": "Bot is missing permissions to join this channel (needs 'Connect' and 'Speak').",
         "joined": "Joined {channel}."
     },
     "leave": {

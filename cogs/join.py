@@ -22,6 +22,12 @@ class JoinCommand(commands.Cog):
 
         channel = interaction.user.voice.channel
         voice_client = interaction.guild.voice_client
+        if voice_client and not voice_client.is_connected():
+            try:
+                await voice_client.disconnect(force=True)
+            except Exception:
+                pass
+            voice_client = None
 
         try:
             if voice_client:
@@ -37,7 +43,7 @@ class JoinCommand(commands.Cog):
                         ephemeral=True
                     )
             else:
-                voice_client = await channel.connect(timeout=20.0, reconnect=True)
+                voice_client = await channel.connect(timeout=20.0, reconnect=True, self_deaf=True)
                 await interaction.followup.send(
                     content=self.bot.locale_manager.get_text(interaction, "join.joined", channel=str(channel.name)),
                     ephemeral=True
@@ -48,10 +54,11 @@ class JoinCommand(commands.Cog):
                 music_handler.start_idle_timer(voice_client)
         except Exception as error:
             print(f"Join error: {error}")
-            await interaction.followup.send(
-                content=self.bot.locale_manager.get_text(interaction, "common.error", error=str(error)),
-                ephemeral=True
-            )
+            if isinstance(error, discord.Forbidden):
+                msg = self.bot.locale_manager.get_text(interaction, "join.missing_permissions")
+            else:
+                msg = f"{self.bot.locale_manager.get_text(interaction, 'join.cannot_join')} ({error})"
+            await interaction.followup.send(content=msg, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(JoinCommand(bot))
